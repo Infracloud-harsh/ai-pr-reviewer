@@ -13,8 +13,6 @@ const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
 
-console.log(process.env.NODE_DEV)
-
 export const octokit = process.env.NODE_DEV
   ? new RetryAndThrottlingOctokit({
       authStrategy: createAppAuth,
