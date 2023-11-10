@@ -1,4 +1,5 @@
 import {error, info, warning} from '@actions/core'
+import dotenv from 'dotenv'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
@@ -16,11 +17,13 @@ import {Inputs} from './inputs'
 import {octokit} from './octokit'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
-import {getTokenCount} from './tokenizer'
+import {getTokenCount, splitPrompt} from './tokenizer'
+
+dotenv.config()
 
 // eslint-disable-next-line camelcase
-const context = github_context
-const repo = context.repo
+let context: any = github_context
+let repo = context.repo
 
 const ignoreKeyword = '@coderabbitai: ignore'
 
@@ -28,13 +31,18 @@ export const codeReview = async (
   lightBot: Bot,
   heavyBot: Bot,
   options: Options,
-  prompts: Prompts
+  prompts: Prompts,
+  requestBody?: Request | null
 ): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
 
+  if (process.env.NODE_DEV) {
+    context = requestBody
+    repo = context.repo
+  }
   if (
     context.eventName !== 'pull_request' &&
     context.eventName !== 'pull_request_target'
@@ -131,9 +139,10 @@ export const codeReview = async (
   }
 
   // Filter out any file that is changed compared to the incremental changes
-  const files = targetBranchFiles.filter(targetBranchFile =>
+  const files = targetBranchFiles.filter((targetBranchFile: {filename: any}) =>
     incrementalFiles.some(
-      incrementalFile => incrementalFile.filename === targetBranchFile.filename
+      (incrementalFile: {filename: any}) =>
+        incrementalFile.filename === targetBranchFile.filename
     )
   )
 
@@ -178,6 +187,7 @@ export const codeReview = async (
           warning('Skipped: context.payload.pull_request is null')
           return null
         }
+        // TODO========================== split file
         try {
           const contents = await octokit.repos.getContent({
             owner: repo.owner,
@@ -309,7 +319,9 @@ ${
   const doSummary = async (
     filename: string,
     fileContent: string,
-    fileDiff: string
+    fileDiff: string,
+    fileContentIndex: number = 0,
+    splitPromptArrLength: number = 0
   ): Promise<[string, string, boolean] | null> => {
     info(`summarize: ${filename}`)
     const ins = inputs.clone()
@@ -325,8 +337,12 @@ ${
     // render prompt based on inputs so far
     const summarizePrompt = prompts.renderSummarizeFileDiff(
       ins,
-      options.reviewSimpleChanges
+      options.reviewSimpleChanges,
+      fileContentIndex,
+      splitPromptArrLength
     )
+
+    // TODO - for sapliting file if prompt limit exceeds =======================================
     const tokens = getTokenCount(summarizePrompt)
 
     if (tokens > options.lightTokenLimits.requestTokens) {
@@ -372,13 +388,42 @@ ${
 
   const summaryPromises = []
   const skippedFiles = []
+  let promptArray: string[] | string = []
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
-    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
-      summaryPromises.push(
-        openaiConcurrencyLimit(
-          async () => await doSummary(filename, fileContent, fileDiff)
-        )
+    // =============================================================================================================
+    // check current difference prompt token count
+    if (getTokenCount(fileDiff) > options.lightTokenLimits.requestTokens) {
+      promptArray = await splitPrompt(
+        options.lightTokenLimits.requestTokens - 100,
+        fileDiff
       )
+    }
+    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
+      if (Array.isArray(promptArray) && promptArray.length > 0) {
+        let index = 1
+        for (const promptContent of promptArray) {
+          summaryPromises.push(
+            openaiConcurrencyLimit(
+              async () =>
+                await doSummary(
+                  filename,
+                  fileContent,
+                  promptContent,
+                  index,
+                  promptArray.length
+                )
+            )
+          )
+          index++
+        }
+        promptArray = []
+      } else {
+        summaryPromises.push(
+          openaiConcurrencyLimit(
+            async () => await doSummary(filename, fileContent, fileDiff)
+          )
+        )
+      }
     } else {
       skippedFiles.push(filename)
     }
