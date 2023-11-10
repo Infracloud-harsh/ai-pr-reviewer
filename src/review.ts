@@ -319,7 +319,9 @@ ${
   const doSummary = async (
     filename: string,
     fileContent: string,
-    fileDiff: string
+    fileDiff: string,
+    fileContentIndex: number = 0,
+    splitPromptArrLength: number = 0
   ): Promise<[string, string, boolean] | null> => {
     info(`summarize: ${filename}`)
     const ins = inputs.clone()
@@ -335,7 +337,9 @@ ${
     // render prompt based on inputs so far
     const summarizePrompt = prompts.renderSummarizeFileDiff(
       ins,
-      options.reviewSimpleChanges
+      options.reviewSimpleChanges,
+      fileContentIndex,
+      splitPromptArrLength
     )
 
     // TODO - for sapliting file if prompt limit exceeds =======================================
@@ -386,7 +390,7 @@ ${
   const skippedFiles = []
   let promptArray: string[] | string = []
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
-    // =============================================================================================================Harsh's Changes
+    // =============================================================================================================
     // check current difference prompt token count
     if (getTokenCount(fileDiff) > options.lightTokenLimits.requestTokens) {
       promptArray = await splitPrompt(
@@ -396,12 +400,21 @@ ${
     }
     if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
       if (Array.isArray(promptArray) && promptArray.length > 0) {
+        let index = 1
         for (const promptContent of promptArray) {
           summaryPromises.push(
             openaiConcurrencyLimit(
-              async () => await doSummary(filename, fileContent, promptContent)
+              async () =>
+                await doSummary(
+                  filename,
+                  fileContent,
+                  promptContent,
+                  index,
+                  promptArray.length
+                )
             )
           )
+          index++
         }
         promptArray = []
       } else {
