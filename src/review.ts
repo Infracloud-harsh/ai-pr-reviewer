@@ -1,5 +1,4 @@
 import {error, info, warning} from '@actions/core'
-import dotenv from 'dotenv'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
