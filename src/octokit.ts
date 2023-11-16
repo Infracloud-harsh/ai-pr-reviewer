@@ -2,12 +2,6 @@ import {getInput, warning} from '@actions/core'
 import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
-import dotenv from 'dotenv'
-import {createAppAuth} from '@octokit/auth-app'
-// // eslint-disable-next-line import/no-commonjs
-// import { Octokit } from '@octokit/rest';
-
-dotenv.config()
 
 const token = getInput('token') || process.env.GITHUB_TOKEN
 
