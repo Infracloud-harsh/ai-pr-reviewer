@@ -13,47 +13,7 @@ const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
 
-export const octokit = process.env.NODE_DEV
-  ? new RetryAndThrottlingOctokit({
-      authStrategy: createAppAuth,
-      auth: {
-        clientId: process.env.GITHUB_APP_CLIENT_ID,
-        clientSecret: process.env.GITHUB_APP_CLIENT_SECRET,
-        installationId: process.env.INSTALLATION_ID,
-        appId: process.env.GITHUB_APP_ID,
-        privateKey:
-          process.env.GITHUB_APP_PEM_FILE &&
-          process.env.GITHUB_APP_PEM_FILE.replace(/\\n/g, '\n')
-      },
-      // auth: `${getGITToken()}`,
-      throttle: {
-        onRateLimit: (
-          retryAfter: number,
-          options: any,
-          _o: any,
-          retryCount: number
-        ) => {
-          console.log(
-            `Request quota exhausted for request ${options.method} ${options.url}
-Retry after: ${retryAfter} seconds
-Retry count: ${retryCount}
-`
-          )
-          return true
-        },
-        onSecondaryRateLimit: (_retryAfter: number, options: any) => {
-          console.log(
-            `SecondaryRateLimit detected for request ${options.method} ${options.url}`
-          )
-          return true
-        }
-      },
-      retry: {
-        doNotRetry: ['429'],
-        maxRetries: 10
-      }
-    })
-  : new RetryAndThrottlingOctokit({
+export const octokit =  new RetryAndThrottlingOctokit({
       auth: `token ${token}`,
       throttle: {
         onRateLimit: (

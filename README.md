@@ -218,11 +218,6 @@ Install the dependencies
 $ npm install
 ```
 
-Setup .env file
- - copy all the env variable from `.example.env` to `.env` file and Keep `NODE_DEV=true` to enable dev mode
-
-Build the typescript and package it for distribution
-
 ```bash
 $ npm run build && npm run package
 ```
