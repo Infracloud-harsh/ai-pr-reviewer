@@ -222,11 +222,6 @@ $ npm install
 $ npm run build && npm run package
 ```
 
-Start The application development
-
-```bash
-$ npm run dev:watch
-```
 
 ## FAQs
 

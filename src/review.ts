@@ -19,8 +19,6 @@ import {type Options} from './options'
 import {type Prompts} from './prompts'
 import {getTokenCount, splitPrompt} from './tokenizer'
 
-dotenv.config()
-
 // eslint-disable-next-line camelcase
 let context: any = github_context
 let repo = context.repo
@@ -39,10 +37,6 @@ export const codeReview = async (
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
 
-  if (process.env.NODE_DEV) {
-    context = requestBody
-    repo = context.repo
-  }
   if (
     context.eventName !== 'pull_request' &&
     context.eventName !== 'pull_request_target'
