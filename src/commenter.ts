@@ -206,7 +206,7 @@ ${COMMENT_TAG}`
       })
 
       const pendingReview = reviews.data.find(
-        (review: {state: string}) => review.state === 'PENDING'
+        review => review.state === 'PENDING'
       )
 
       if (pendingReview) {
