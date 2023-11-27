@@ -180,7 +180,6 @@ export const codeReview = async (
           warning('Skipped: context.payload.pull_request is null')
           return null
         }
-        // TODO========================== split file
         try {
           const contents = await octokit.repos.getContent({
             owner: repo.owner,
