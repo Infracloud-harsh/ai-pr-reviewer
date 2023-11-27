@@ -744,7 +744,6 @@ ${chain}
           per_page: 100,
           page
         })
-        
         allCommits.push(...commits.data.map(commit => commit.sha))
         page++
       } while (commits.data.length > 0)
