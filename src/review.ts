@@ -334,7 +334,7 @@ ${
       splitPromptArrLength
     )
 
-    // TODO - for sapliting file if prompt limit exceeds =======================================
+    // spliting file if prompt limit exceeds 
     const tokens = getTokenCount(summarizePrompt)
 
     if (tokens > options.lightTokenLimits.requestTokens) {
@@ -382,7 +382,6 @@ ${
   const skippedFiles = []
   let promptArray: string[] | string = []
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
-    // =============================================================================================================
     // check current difference prompt token count
     if (getTokenCount(fileDiff) > options.lightTokenLimits.requestTokens) {
       promptArray = await splitPrompt(
