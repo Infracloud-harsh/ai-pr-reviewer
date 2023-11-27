@@ -7,16 +7,16 @@ const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
 
-export const octokit =  new RetryAndThrottlingOctokit({
-      auth: `token ${token}`,
-      throttle: {
-        onRateLimit: (
-          retryAfter: number,
-          options: any,
-          _o: any,
-          retryCount: number
-        ) => {
-          warning(
+export const octokit = new RetryAndThrottlingOctokit({
+    auth: `token ${token}`,
+    throttle: {
+    onRateLimit: (
+        retryAfter: number,
+        options: any,
+        _o: any,
+        retryCount: number
+      ) => {
+        warning(
             `Request quota exhausted for request ${options.method} ${options.url}
 Retry after: ${retryAfter} seconds
 Retry count: ${retryCount}
